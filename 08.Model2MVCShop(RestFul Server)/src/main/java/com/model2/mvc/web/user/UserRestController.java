@@ -1,5 +1,6 @@
 package com.model2.mvc.web.user;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -27,49 +28,129 @@ import com.model2.mvc.service.user.UserService;
 @RestController
 @RequestMapping("/user/*")
 public class UserRestController {
-	
-	///Field
-	@Autowired
-	@Qualifier("userServiceImpl")
-	private UserService userService;
-	//setter Method 구현 않음
-		
-	public UserRestController(){
-		System.out.println(this.getClass());
-	}
-	
-	@RequestMapping( value="json/addUser", method=RequestMethod.POST )
-	public User addUser( @RequestBody User user ) throws Exception {
+   
+   ///Field
+   @Autowired
+   @Qualifier("userServiceImpl")
+   private UserService userService;
+   //setter Method 구현 않음
+      
+   public UserRestController(){
+      System.out.println(this.getClass());
+   }
+   
+   @Value("#{commonProperties['pageUnit']}")
+	int pageUnit;
+	@Value("#{commonProperties['pageSize']}")
+	int pageSize;
+   
+   @RequestMapping(value="json/addUser", method=RequestMethod.POST)
+   public User addUser( @RequestBody User user) throws Exception {
 
-		System.out.println("/user/json/addUser : POST");
-		//Business Logic
-		userService.addUser(user);
-		
-		return user;
-	}
-	
-	@RequestMapping( value="json/getUser/{userId}", method=RequestMethod.GET )
-	public User getUser( @PathVariable String userId ) throws Exception{
-		
-		System.out.println("/user/json/getUser : GET");
-		
-		//Business Logic
-		return userService.getUser(userId);
-	}
+      System.out.println("/user/json/addUser : POST");
+      //Business Logic
+      userService.addUser(user);
+      
+      return user;
+   }
+   
+   @RequestMapping( value="json/getUser/{userId}", method=RequestMethod.GET )
+   public User getUser( @PathVariable String userId ) throws Exception{
+      
+      System.out.println("/user/json/getUser : GET");
+      
+      //Business Logic
+      return userService.getUser(userId);
+   }
+   
+   @RequestMapping( value="json/updateUser/{userId}", method=RequestMethod.GET )
+   public User updateUser( @PathVariable String userId) throws Exception{
 
-	@RequestMapping( value="json/login", method=RequestMethod.POST )
-	public User login(	@RequestBody User user,
-									HttpSession session ) throws Exception{
-	
-		System.out.println("/user/json/login : POST");
-		//Business Logic
-		System.out.println("::"+user);
-		User dbUser=userService.getUser(user.getUserId());
-		
-		if( user.getPassword().equals(dbUser.getPassword())){
-			session.setAttribute("user", dbUser);
-		}
-		
-		return dbUser;
-	}
+      System.out.println("/user/json/updateUser : GET");
+      //Business Logic
+      User user = userService.getUser(userId);
+      // Model 과 View 연결
+      
+      return userService.getUser(userId);
+   }
+
+   @RequestMapping( value="json/updateUser", method=RequestMethod.POST )
+   public User updateUser( @RequestBody User user, HttpSession session) throws Exception{
+
+      System.out.println("/user/json/updateUser : POST");
+      //Business Logic
+      userService.updateUser(user);
+      
+      String sessionId=((User)session.getAttribute("user")).getUserId();
+      if(sessionId.equals(user.getUserId())){
+         session.setAttribute("user", user);
+      }
+      
+      return user;
+   }
+
+   @RequestMapping( value="json/login", method=RequestMethod.POST )
+   public User login(   @RequestBody User user,
+                           HttpSession session ) throws Exception{
+   
+      System.out.println("/user/json/login : POST");
+      //Business Logic
+      System.out.println("::"+user);
+      User dbUser=userService.getUser(user.getUserId());
+      
+      if( user.getPassword().equals(dbUser.getPassword())){
+         session.setAttribute("user", dbUser);
+      }
+      
+      return dbUser;
+   }
+   
+   @RequestMapping( value="json/logout", method=RequestMethod.GET )
+   public void logout(HttpSession session ) throws Exception{
+      
+      System.out.println("/user/json/logout : POST");
+      
+      session.invalidate();
+   }
+   
+   @RequestMapping( value="json/checkDuplication", method=RequestMethod.POST )
+   public Map checkDuplication( @RequestBody String userId) throws Exception{
+      
+      System.out.println("/user/json/checkDuplication : POST");
+      //Business Logic
+      boolean result=userService.checkDuplication(userId);
+      
+      Map map=new HashMap();
+      // Model 과 View 연결
+      map.put("result", new Boolean(result));
+      map.put("userId", userId);
+    
+      return map;
+   }
+
+   @RequestMapping( value="json/listUser", method=RequestMethod.POST)
+   public Map listUser( @RequestBody Search search) throws Exception{
+      
+      System.out.println("/user/json/listUser : GET / POST");
+      
+      if(search.getCurrentPage() ==0 ){
+         search.setCurrentPage(1);
+      }
+      search.setPageSize(pageSize);
+      
+      // Business logic 수행
+      Map<String , Object> map=userService.getUserList(search);
+      
+      Page resultPage = new Page( search.getCurrentPage(), ((Integer)map.get("totalCount")).intValue(), pageUnit, pageSize);
+      System.out.println(resultPage);
+      
+      Map mapList=new HashMap();
+      // Model 과 View 연결
+      mapList.put("list", map.get("list"));
+      mapList.put("resultPage", resultPage);
+      mapList.put("search", search);
+      
+      return mapList;
+   }
+   
 }
