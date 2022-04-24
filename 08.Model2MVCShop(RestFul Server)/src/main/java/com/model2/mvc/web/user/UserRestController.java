@@ -62,17 +62,6 @@ public class UserRestController {
       //Business Logic
       return userService.getUser(userId);
    }
-   
-   @RequestMapping( value="json/updateUser/{userId}", method=RequestMethod.GET )
-   public User updateUser( @PathVariable String userId) throws Exception{
-
-      System.out.println("/user/json/updateUser : GET");
-      //Business Logic
-      User user = userService.getUser(userId);
-      // Model °ú View ¿¬°á
-      
-      return userService.getUser(userId);
-   }
 
    @RequestMapping( value="json/updateUser", method=RequestMethod.POST )
    public User updateUser( @RequestBody User user, HttpSession session) throws Exception{
